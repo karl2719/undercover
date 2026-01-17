@@ -1,6 +1,7 @@
 package com.black.model;
 
 public class ServerInfo {
+    private final String serverName;
     private final String address;
     private final int port;
     private long lastSeen;
@@ -9,8 +10,12 @@ public class ServerInfo {
         String[] parts = serverInfo.split(":");
         this.address = parts[0];
         this.port = Integer.parseInt(parts[1]);
+        this.serverName = parts[2];
     }
 
+    public String getServerName() {
+        return serverName;
+    }
     public String getAddress() {
         return address;
     }
@@ -33,6 +38,6 @@ public class ServerInfo {
 
     @Override
     public String toString() {
-        return address + ":" + port;
+        return serverName + " (" + address + ":" + port + ")";
     }
 }

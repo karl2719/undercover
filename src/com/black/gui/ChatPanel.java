@@ -135,6 +135,15 @@ public class ChatPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 0);
         panel.add(bottomPanel, gbc);
         
+        // Back to Menu button
+        JButton backToMenuButton = new JButton("← Back to Menu");
+        UIStyler.styleButton(backToMenuButton, new Color(100, 100, 120), new Color(30, 35, 40));
+        backToMenuButton.addActionListener(e -> handler.onBackToMenuRequested());
+        gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 0, 0, 0);
+        panel.add(backToMenuButton, gbc);
+        
         // Layout
         setLayout(new BorderLayout());
         setOpaque(false);

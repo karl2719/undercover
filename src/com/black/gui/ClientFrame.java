@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import com.black.client.Client;
-import com.black.client.DiscoveryClient;
+import com.black.service.UnifiedDiscoveryService;
 import com.black.interfaces.IConnectionHandler;
 import com.black.model.ChatPacket;
 import com.black.model.ServerInfo;
@@ -13,8 +13,9 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Map;
 
-public class ClientFrame extends JFrame implements IConnectionHandler {
+public class ClientFrame extends JPanel implements IConnectionHandler {
     // UI Components
     private JPanel leftPanel;
     private GamePanel gamePanel;
@@ -26,23 +27,16 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
     
     // Network components
     private Client client;
-    private DiscoveryClient discoveryClient;
+    private UnifiedDiscoveryService discoveryService;
     private Thread clientThread;
+    private MainFrame mainFrame;
 
-    public ClientFrame() {
+    public ClientFrame(MainFrame mainFrame) {
         super();
-        this.setTitle("Network Manager");
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        // Modern UI settings
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            // Fall back to default
-        }
+        this.mainFrame = mainFrame;
+        this.discoveryService = UnifiedDiscoveryService.getInstance();
         
         this.setLayout(new BorderLayout());
-        this.setMinimumSize(new Dimension(900, 600));
         
         // Gradient background
         JPanel contentPane = new JPanel(new GridBagLayout()) {
@@ -59,7 +53,7 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        this.setContentPane(contentPane);
+        contentPane.setOpaque(false);
         
         // Main content area
         JPanel mainPanel = new JPanel(new GridBagLayout());
@@ -84,7 +78,15 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
         gamePanel = new GamePanel();
         mainPanel.add(gamePanel, gbc);
         
-        contentPane.add(mainPanel, gbc);
+        GridBagConstraints topGbc = new GridBagConstraints();
+        topGbc.gridx = 0;
+        topGbc.gridy = 0;
+        topGbc.gridwidth = 2;
+        topGbc.weightx = 1.0;
+        topGbc.weighty = 1.0;
+        topGbc.fill = GridBagConstraints.BOTH;
+        topGbc.insets = new Insets(15, 15, 5, 15);
+        contentPane.add(mainPanel, topGbc);
         
         // Error message at the bottom (always visible)
         errorMessageLabel = new JLabel(" ");
@@ -95,20 +97,19 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
         errorMessageLabel.setOpaque(true);
         errorMessageLabel.setBackground(new Color(40, 44, 52));
         
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        gbc.weighty = 0;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        contentPane.add(errorMessageLabel, gbc);
+        topGbc.gridy = 1;
+        topGbc.weighty = 0;
+        topGbc.insets = new Insets(0, 0, 0, 0);
+        topGbc.fill = GridBagConstraints.HORIZONTAL;
+        contentPane.add(errorMessageLabel, topGbc);
         
-        // Initialize discovery client
-        this.discoveryClient = new DiscoveryClient();
-        setDiscoveryClientListeners();
-        startDiscoveryClient();
+        this.add(contentPane, BorderLayout.CENTER);
         
-        this.pack();
+        // Initialize discovery service listeners
+        setDiscoveryServiceListeners();
+        
+        // Populate any existing servers
+        updateDiscoveredServersList();
     }
 
     private JPanel createLeftPanel() {
@@ -236,8 +237,24 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
         showError(" ");
     }
     
-    // ========== Client Event Listeners ==========
-
+    @Override
+    public void onBackToMenuRequested() {
+        if (client != null && client.isConnected()) {
+            int result = JOptionPane.showConfirmDialog(
+                mainFrame,
+                "You are still connected. Disconnect and return to menu?",
+                "Confirm",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (result == JOptionPane.YES_OPTION) {
+                onLeaveRequested();
+                mainFrame.returnToModeSelector();
+            }
+        } else {
+            mainFrame.returnToModeSelector();
+        }
+    }
+    
     // ========== Client Event Listeners ==========
     
     private void setClientListeners() {
@@ -284,16 +301,13 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
         });
     }
 
-    private void setDiscoveryClientListeners() {
-        if (discoveryClient == null)
-            return;
-
-        discoveryClient.setOnServerDiscovered(() -> {
+    private void setDiscoveryServiceListeners() {
+        discoveryService.setOnServerDiscovered(() -> {
             System.out.println("New server discovered!");
             updateDiscoveredServersList();
         });
 
-        discoveryClient.setOnServerLost(serverInfo -> {
+        discoveryService.setOnServerLost(serverInfo -> {
             System.out.println("Server lost: " + serverInfo);
             updateDiscoveredServersList();
         });
@@ -303,18 +317,11 @@ public class ClientFrame extends JFrame implements IConnectionHandler {
         SwingUtilities.invokeLater(() -> {
             serverListPanel.getServerComboBox().removeAllItems();
 
-            for (String serverInfo : discoveryClient.discoveredServers) {
-                ServerInfo si = new ServerInfo(serverInfo);
+            for (Map.Entry<String, ServerInfo> entry : discoveryService.getServerMap().entrySet()) {
+                ServerInfo si = entry.getValue();
                 serverListPanel.getServerComboBox().addItem(si);
             }
         });
     }
 
-    private void startDiscoveryClient() {
-        discoveryClient.listenForServers();
-    }
-
-    private void handleMove(int x, int y, String sender) {
-        // Movement handling removed - GamePanel redesigned for Undercover game
-    }
 }

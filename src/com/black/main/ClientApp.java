@@ -1,12 +1,19 @@
 package com.black.main;
 
 import java.io.IOException;
+import javax.swing.SwingUtilities;
+import com.black.gui.MainFrame;
 
-import com.black.gui.ClientFrame;
-
+/**
+ * @deprecated Use UndercoverApp instead
+ */
+@Deprecated
 public class ClientApp{
     public static void main(String[] args) throws IOException{
-       ClientFrame fenetre = new ClientFrame();
-       fenetre.setVisible(true);
+       // Redirect to unified app
+       SwingUtilities.invokeLater(() -> {
+           MainFrame mainFrame = new MainFrame();
+           mainFrame.setVisible(true);
+       });
     }
 }

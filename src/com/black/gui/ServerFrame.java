@@ -1,6 +1,6 @@
 package com.black.gui;
 
-import com.black.server.DiscoveryServer;
+import com.black.service.UnifiedDiscoveryService;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -15,35 +15,30 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.text.NumberFormat;
 
-public class ServerFrame extends JFrame {
+public class ServerFrame extends JPanel {
     JLabel serverIpAddress;
+    JTextField serverName;
     JFormattedTextField port;
-    JButton startServer, stopServer;
+    JButton startServer, stopServer, backButton;
     JPanel panel;
 
     Server server;
-    DiscoveryServer discoveryServer;
+    UnifiedDiscoveryService discoveryService;
     JLabel errorMessage;
 
     int portNumber;
     String hostAddress;
 
     Thread serverThread;
+    MainFrame mainFrame;
 
-    public ServerFrame() {
+    public ServerFrame(MainFrame mainFrame) {
         super();
-        this.setTitle("Network Manager");
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        // Modern UI settings
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            // Fall back to default
-        }
-        
+        this.mainFrame = mainFrame;
+        this.discoveryService = UnifiedDiscoveryService.getInstance();
+
         this.setLayout(new BorderLayout());
-        
+
         // Gradient background panel
         JPanel backgroundPanel = new JPanel(new GridBagLayout()) {
             @Override
@@ -52,9 +47,8 @@ public class ServerFrame extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(30, 32, 38),
-                    0, getHeight(), new Color(42, 45, 52)
-                );
+                        0, 0, new Color(30, 32, 38),
+                        0, getHeight(), new Color(42, 45, 52));
                 g2d.setPaint(gradient);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
@@ -63,10 +57,6 @@ public class ServerFrame extends JFrame {
         panel = createPanel();
         backgroundPanel.add(panel);
         this.add(backgroundPanel, BorderLayout.CENTER);
-
-        this.setSize(450, 280);
-        this.setLocationRelativeTo(null);
-        this.setResizable(false);
     }
 
     public JPanel createPanel() {
@@ -76,13 +66,13 @@ public class ServerFrame extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Draw shadow
                 g2d.setColor(new Color(0, 0, 0, 40));
                 g2d.fillRoundRect(4, 4, getWidth() - 4, getHeight() - 4, 12, 12);
                 g2d.setColor(new Color(0, 0, 0, 30));
                 g2d.fillRoundRect(2, 2, getWidth() - 2, getHeight() - 2, 12, 12);
-                
+
                 // Draw dark card background
                 g2d.setColor(new Color(48, 52, 60));
                 g2d.fillRoundRect(0, 0, getWidth() - 6, getHeight() - 6, 12, 12);
@@ -90,14 +80,29 @@ public class ServerFrame extends JFrame {
         };
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(30, 35, 30, 35));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
+
+        // Back button at the top
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 0, 15, 12);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+
+        backButton = new JButton("← Back");
+        styleButton(backButton, new Color(100, 100, 120), new Color(30, 35, 40));
+        backButton.addActionListener(e -> {
+            mainFrame.returnToModeSelector();
+        });
+        panel.add(backButton, gbc);
 
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(12, 12, 12, 12);
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.gridwidth = 2;
 
         serverIpAddress = new JLabel("\u25CF Host: xx.xx.xx.xx");
@@ -108,7 +113,29 @@ public class ServerFrame extends JFrame {
         serverIpAddress.setBorder(new EmptyBorder(10, 15, 10, 15));
         panel.add(serverIpAddress, gbc);
 
-        gbc.gridy = 1;
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridwidth = 1;
+
+        JLabel serverNameLabel = new JLabel("Server Name: ");
+        serverNameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        serverNameLabel.setForeground(new Color(200, 200, 210));
+        panel.add(serverNameLabel, gbc);
+        gbc.gridx = 1;
+
+        serverName = new JTextField(16);
+        serverName.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        serverName.setBackground(new Color(38, 42, 48));
+        serverName.setForeground(new Color(220, 220, 230));
+        serverName.setCaretColor(new Color(180, 220, 140));
+        serverName.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(70, 75, 85), 1, true),
+                        BorderFactory.createLineBorder(new Color(55, 60, 68), 2)),
+                new EmptyBorder(6, 10, 6, 10)));
+        panel.add(serverName, gbc);
+
+        gbc.gridy = 3;
         gbc.gridx = 0;
         gbc.gridwidth = 1;
 
@@ -121,12 +148,10 @@ public class ServerFrame extends JFrame {
         port.setForeground(new Color(220, 220, 230));
         port.setCaretColor(new Color(180, 220, 140));
         port.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(70, 75, 85), 1, true),
-                BorderFactory.createLineBorder(new Color(55, 60, 68), 2)
-            ),
-            new EmptyBorder(6, 10, 6, 10)
-        ));
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(70, 75, 85), 1, true),
+                        BorderFactory.createLineBorder(new Color(55, 60, 68), 2)),
+                new EmptyBorder(6, 10, 6, 10)));
 
         JLabel portLabel = new JLabel("Port: ");
         portLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -135,7 +160,7 @@ public class ServerFrame extends JFrame {
         gbc.gridx = 1;
         panel.add(port, gbc);
 
-        gbc.gridy = 2;
+        gbc.gridy = 4;
         gbc.gridx = 0;
         startServer = new JButton("Host");
         styleButton(startServer, new Color(130, 180, 100), new Color(30, 35, 40));
@@ -165,13 +190,13 @@ public class ServerFrame extends JFrame {
         errorMessage.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         panel.add(errorMessage, gbc);
 
         return panel;
     }
-    
+
     private void styleButton(JButton button, Color bgColor, Color fgColor) {
         button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setBackground(bgColor);
@@ -182,20 +207,20 @@ public class ServerFrame extends JFrame {
         button.setContentAreaFilled(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBorder(new EmptyBorder(12, 24, 12, 24));
-        
+
         // Custom painting for gradient and shadow
         button.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
             @Override
             public void paint(Graphics g, JComponent c) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 JButton btn = (JButton) c;
                 if (btn.isEnabled()) {
                     // Shadow
                     g2d.setColor(new Color(0, 0, 0, 30));
                     g2d.fillRoundRect(2, 3, c.getWidth() - 2, c.getHeight() - 2, 8, 8);
-                    
+
                     // Gradient background
                     Color color1 = btn.getBackground();
                     Color color2 = color1.darker();
@@ -205,18 +230,17 @@ public class ServerFrame extends JFrame {
                     } else if (btn.getModel().isRollover()) {
                         color1 = color1.brighter();
                     }
-                    
+
                     GradientPaint gradient = new GradientPaint(
-                        0, 0, color1,
-                        0, c.getHeight(), color2
-                    );
+                            0, 0, color1,
+                            0, c.getHeight(), color2);
                     g2d.setPaint(gradient);
                     g2d.fillRoundRect(0, 0, c.getWidth() - 3, c.getHeight() - 3, 8, 8);
                 } else {
                     g2d.setColor(new Color(200, 200, 210));
                     g2d.fillRoundRect(0, 0, c.getWidth() - 3, c.getHeight() - 3, 8, 8);
                 }
-                
+
                 super.paint(g, c);
             }
         });
@@ -238,6 +262,12 @@ public class ServerFrame extends JFrame {
         if (server != null && server.isRunning())
             return;
 
+        String name = serverName.getText().trim();
+        if (name.isEmpty()) {
+            setErrorMessage("Server name can't be empty.");
+            return;
+        }
+
         Number number = (Number) port.getValue();
 
         if (number == null) {
@@ -246,10 +276,11 @@ public class ServerFrame extends JFrame {
         }
 
         portNumber = number.intValue();
+
         try {
             hostAddress = IpUtilities.getLocalIp();
             SwingUtilities.invokeLater(() -> {
-                serverIpAddress.setText("Host: " + hostAddress + " port: " + portNumber);
+                serverIpAddress.setText("\u25CF " + name + " - " + hostAddress + ":" + portNumber);
             });
             clearErrorMessage();
         } catch (IOException e1) {
@@ -260,13 +291,29 @@ public class ServerFrame extends JFrame {
             return;
         }
 
+        clearErrorMessage();
+
         serverThread = new Thread(() -> {
 
             try {
                 ServerSocket serverSocket = new ServerSocket(portNumber);
                 server = new Server(serverSocket);
                 server.setOnStartEvent(() -> SwingUtilities.invokeLater(() -> updateButton()));
-                server.startServer();
+
+                // Start broadcasting with unified discovery service BEFORE starting server
+                // (startServer blocks in an infinite loop)
+
+                // check if a server with the same name already exist and stop it if it does
+                if (discoveryService.containsServer(name)) {
+                    setErrorMessage(
+                            "The server name is already in use. Please choose a different name.");
+                    server.closeServerSocket();
+                    server = null;
+                    return;
+                } else {
+                    discoveryService.startBroadcasting(hostAddress, portNumber, name);
+                    server.startServer();
+                }
 
             } catch (IllegalArgumentException e) {
                 SwingUtilities.invokeLater(() -> {
@@ -288,9 +335,6 @@ public class ServerFrame extends JFrame {
         });
         serverThread.start();
 
-        System.out.println("Starting discovery server at " + hostAddress + ":" + portNumber);
-        discoveryServer = new DiscoveryServer(hostAddress, portNumber);
-        discoveryServer.start();
     }
 
     public void setHostAddress(String address) {
@@ -307,12 +351,13 @@ public class ServerFrame extends JFrame {
 
         server.closeServerSocket();
 
-        discoveryServer.stop();
+        // Stop broadcasting but keep discovery service running
+        discoveryService.stopBroadcasting();
 
         SwingUtilities.invokeLater(
                 () -> {
                     updateButton();
-                    serverIpAddress.setText("Host: xx.xx.xx.xx");
+                    serverIpAddress.setText("\u25CF Host: xx.xx.xx.xx");
                 });
     }
 

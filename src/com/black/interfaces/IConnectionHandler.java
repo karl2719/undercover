@@ -44,4 +44,9 @@ public interface IConnectionHandler {
      * Clear the current error message.
      */
     void clearError();
+    
+    /**
+     * Request to return to the main menu.
+     */
+    void onBackToMenuRequested();
 }

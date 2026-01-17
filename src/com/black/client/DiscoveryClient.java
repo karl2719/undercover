@@ -12,13 +12,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @deprecated This class is no longer used. Use {@link com.black.service.UnifiedDiscoveryService} instead.
+ * The UnifiedDiscoveryService combines both client discovery and server broadcasting functionality.
+ */
+@Deprecated
 public class DiscoveryClient {
     private final int broadcastPort;
     private DatagramSocket socket;
     private volatile boolean running = true;
-
-    public final List<String> discoveredServers = Collections.synchronizedList(new ArrayList<>());
-    private final Map<String, Long> serverLastSeen = Collections.synchronizedMap(new HashMap<>());
     
     private final Map<String, ServerInfo> serverMap = Collections.synchronizedMap(new HashMap<>());
 
@@ -26,6 +28,10 @@ public class DiscoveryClient {
 
     private Runnable onServerDiscovered;
     private ServerLostListener onServerLost;
+
+    public Map<String, ServerInfo> getServerMap(){
+        return Map.copyOf(serverMap);
+    }
 
     public void setOnServerDiscovered(Runnable callback) {
         this.onServerDiscovered = callback;
@@ -54,18 +60,21 @@ public class DiscoveryClient {
     }
 
     public boolean addServer(String serverInfo) {
-        synchronized (discoveredServers) {
-            if (!discoveredServers.contains(serverInfo)) {
-                return discoveredServers.add(serverInfo);
+        synchronized (serverMap) {
+            if (!serverMap.containsKey(serverInfo)) {
+                serverMap.put(serverInfo, new ServerInfo(serverInfo));
+                return true;
             }
         }
         return false;
     }
 
     public boolean removeServer(String serverInfo) {
-        synchronized (discoveredServers) {
-            return discoveredServers.remove(serverInfo);
+        boolean contains = serverMap.containsKey(serverInfo);
+        synchronized (serverMap) {
+            serverMap.remove(serverInfo);
         }
+        return contains;
     }
 
     public static String getAddress(String serverInfo) {
@@ -74,6 +83,10 @@ public class DiscoveryClient {
 
     public static int getPort(String serverInfo) {
         return Integer.parseInt(serverInfo.split(":")[1]);
+    }
+
+    public static String getName(String serverInfo) {
+        return serverInfo.split(":")[2];
     }
 
     public void listenForServers() {
@@ -96,8 +109,8 @@ public class DiscoveryClient {
                         onServerDiscovered.run();
                     }
 
-                    synchronized (serverLastSeen) {
-                        serverLastSeen.put(msg, System.currentTimeMillis());
+                    synchronized (serverMap) {
+                        serverMap.get(msg).setLastSeen(System.currentTimeMillis());
                     }
                 }
 
@@ -117,15 +130,17 @@ public class DiscoveryClient {
                 long currentTime = System.currentTimeMillis();
                 List<String> toRemove = new ArrayList<>();
 
-                synchronized (serverLastSeen) {
-                    for (Map.Entry<String, Long> entry : serverLastSeen.entrySet()) {
-                        if (currentTime - entry.getValue() > SERVER_TIMEOUT_MS) {
+                synchronized (serverMap) {
+                    for (Map.Entry<String, ServerInfo> entry : serverMap.entrySet()) {
+                        long lastSeen = entry.getValue().getLastSeen();
+                        if (currentTime - lastSeen > SERVER_TIMEOUT_MS) {
                             toRemove.add(entry.getKey());
                         }
                     }
 
                     for (String server : toRemove) {
-                        serverLastSeen.remove(server);
+                        serverMap.remove(server);
+
                         removeServer(server);
                         if (onServerLost != null) {
                             onServerLost.onServerLost(server);
@@ -142,5 +157,6 @@ public class DiscoveryClient {
 
         }, "DiscoveryClient-CleanupThread").start();
     }
+
 
 }

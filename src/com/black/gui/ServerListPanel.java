@@ -45,7 +45,7 @@ public class ServerListPanel extends JPanel {
 
         // Server ComboBox
         serverComboBox = new JComboBox<>();
-        serverComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        serverComboBox.setFont(new Font("Segoe UI", Font.BOLD, 12));
         serverComboBox.setBorder(BorderFactory.createLineBorder(new Color(70, 75, 85), 1, true));
         gbc.gridx = 1;
         panel.add(serverComboBox, gbc);
@@ -63,10 +63,18 @@ public class ServerListPanel extends JPanel {
         // Join Button
         gbc.gridy = 3;
         gbc.gridx = 0;
+        gbc.gridwidth = 1;
         joinButton = new JButton("Join");
         UIStyler.styleButton(joinButton, new Color(130, 180, 100), new Color(30, 35, 40));
         joinButton.addActionListener(e -> handleJoinClick());
         panel.add(joinButton, gbc);
+        
+        // Back to Menu Button
+        JButton backToMenuButton = new JButton("\u2190 Menu");
+        UIStyler.styleButton(backToMenuButton, new Color(100, 100, 120), new Color(30, 35, 40));
+        backToMenuButton.addActionListener(e -> handler.onBackToMenuRequested());
+        gbc.gridx = 1;
+        panel.add(backToMenuButton, gbc);
         
         // Layout
         setLayout(new BorderLayout());

@@ -39,6 +39,14 @@ public class ConnectionTypePanel extends JPanel {
         discoverServersButton.addActionListener(e -> handler.onPanelSwitchRequested("listServer"));
         panel.add(discoverServersButton, gbc);
         
+        // Back Button
+        gbc.gridy = 2;
+        gbc.insets = new Insets(20, 10, 0, 10);
+        JButton backButton = new JButton("\u2190 Back to Menu");
+        UIStyler.styleButton(backButton, new Color(100, 100, 120), new Color(30, 35, 40));
+        backButton.addActionListener(e -> handler.onBackToMenuRequested());
+        panel.add(backButton, gbc);
+        
         // Layout
         setLayout(new BorderLayout());
         setOpaque(false);
