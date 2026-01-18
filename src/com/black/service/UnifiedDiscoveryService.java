@@ -15,10 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Unified Discovery Service that handles both server broadcasting and client discovery
- * using a single shared DatagramSocket.
- */
 public class UnifiedDiscoveryService {
     private static UnifiedDiscoveryService instance;
     

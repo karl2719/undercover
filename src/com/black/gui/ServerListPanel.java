@@ -93,10 +93,6 @@ public class ServerListPanel extends JPanel {
         handler.onDiscoveredServerJoinRequested(username);
     }
     
-    /**
-     * Get the server combo box to allow external updates.
-     * @return The server combo box
-     */
     public JComboBox<ServerInfo> getServerComboBox() {
         return serverComboBox;
     }

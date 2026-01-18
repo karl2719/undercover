@@ -6,7 +6,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
-    private JPanel currentPanel;
     private ServerFrame serverFrame;
     private ClientFrame clientFrame;
     private UnifiedDiscoveryService discoveryService;
