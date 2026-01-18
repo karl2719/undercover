@@ -281,10 +281,6 @@ public class ClientFrame extends JPanel implements IConnectionHandler {
             showError(message);
         });
 
-        client.setOnMoveReceived((x, y, sender) -> {
-            // Movement handling removed - GamePanel redesigned for Undercover game
-        });
-
         client.setOnJoinListener(uName -> {
             // Player join handling - can be used for game logic
             if (uName.equals(client.getUsername()))

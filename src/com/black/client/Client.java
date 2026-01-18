@@ -4,10 +4,8 @@ import com.black.enums.PacketType;
 import com.black.listeners.JoinListener;
 import com.black.listeners.LeaveListener;
 import com.black.listeners.MessageListener;
-import com.black.listeners.MoveListener;
 import com.black.listeners.SystemListener;
 import com.black.model.ChatPacket;
-import com.black.model.MovePacket;
 import com.black.model.NetworkPacket;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -24,7 +22,6 @@ public class Client {
     private Runnable onConnected, onDisconnected;
     private MessageListener messageListener;
     private SystemListener systemMessageListener;
-    private MoveListener moveListener;
     private JoinListener joinListener;
     private LeaveListener leaveListener;
 
@@ -34,10 +31,6 @@ public class Client {
 
     public void setOnLeaveListener(LeaveListener listener) {
         this.leaveListener = listener;
-    }
-
-    public void setOnMoveReceived(MoveListener listener) {
-        this.moveListener = listener;
     }
 
     public void setOnConnected(Runnable callback) {
@@ -210,13 +203,6 @@ public class Client {
                 if (messageListener != null) {
                     String message = chatPacket.getSender() + ": " + chatPacket.getMessage();
                     messageListener.onMessageReceived(message);
-                }
-                break;
-
-            case MOVE:
-                MovePacket movePacket = (MovePacket) packet;
-                if (moveListener != null) {
-                    moveListener.onMoveReceived(movePacket.getX(), movePacket.getY(), movePacket.getSender());
                 }
                 break;
 

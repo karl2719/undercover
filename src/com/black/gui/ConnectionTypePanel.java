@@ -13,8 +13,8 @@ public class ConnectionTypePanel extends JPanel {
     private final JButton directConnectButton;
     private final JButton discoverServersButton;
     
-    public ConnectionTypePanel(IConnectionHandler handler) {
-        this.handler = handler;
+    public ConnectionTypePanel(IConnectionHandler _handler) {
+        this.handler = _handler;
         
         JPanel panel = UIStyler.createCardPanel(new GridBagLayout());
         panel.setBorder(new EmptyBorder(30, 35, 30, 35));

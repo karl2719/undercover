@@ -8,9 +8,6 @@ import com.black.utils.UIStyler;
 
 import java.awt.*;
 
-/**
- * Panel for chat functionality and server interaction.
- */
 public class ChatPanel extends JPanel {
     private final IConnectionHandler handler;
     private final JTextArea chatArea;
