@@ -1,4 +1,6 @@
 compilation 
+javac -cp bin -d bin src/com/black/**/*.java
+
 
 env -i \
 HOME=$HOME \
